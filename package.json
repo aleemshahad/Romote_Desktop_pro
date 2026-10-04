@@ -1,8 +1,8 @@
 {
   "name": "romte-remote",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Remote desktop control + real-time PC/mobile chat over your LAN - open source, with Windows EXE builds",
-  "main": "server.js",
+  "main": "desktop/main.js",
   "bin": {
     "romte-remote": "bin/cli.js"
   },
@@ -49,7 +49,6 @@
   "build": {
     "appId": "com.romte.remote",
     "productName": "Romte Remote",
-    "main": "desktop/main.js",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -78,7 +77,7 @@
       "shortcutName": "Romte Remote"
     },
     "portable": {
-      "executableName": "RomteRemote-Portable.exe"
+      "artifactName": "RomteRemote-Portable.exe"
     }
   }
 }
