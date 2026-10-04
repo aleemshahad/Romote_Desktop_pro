@@ -36,9 +36,10 @@ jobs:
         continue-on-error: true
 
       - name: Package desktop app
-        # On tag builds electron-builder publishes the EXEs to the GitHub
-        # Release automatically (that's what GH_TOKEN is used for).
-        run: npx electron-builder --win
+        # Tag builds publish the EXEs to a GitHub Release automatically
+        # (releaseType "release" in package.json -> never a draft).
+        # Manual runs only build + upload the workflow artifact.
+        run: npx electron-builder --win ${{ startsWith(github.ref, 'refs/tags/') && '--publish always' || '--publish never' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
