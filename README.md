@@ -28,6 +28,8 @@ Romte Remote aapke Windows PC ko phone ka remote control banata hai: screen live
 
 Bas — install complete.
 
+> **Node.js users:** `npm install -g romte-remote` se bhi install ho jata hai, phir terminal mein `romte-remote` chalayein.
+
 ---
 
 ## 🚀 Use kaise karein
