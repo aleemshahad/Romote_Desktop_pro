@@ -1,24 +1,46 @@
 {
   "name": "romte-remote",
-  "version": "2.0.0",
-  "description": "Romte Remote Desktop + PC<->Mobile Chat",
+  "version": "2.1.0",
+  "description": "Remote desktop control + real-time PC/mobile chat over your LAN - open source, with Windows EXE builds",
   "main": "server.js",
+  "bin": {
+    "romte-remote": "bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "public",
+    "server.js",
+    "run_server.bat"
+  ],
   "scripts": {
     "start": "node server.js",
     "desktop": "electron desktop/main.js",
     "icon": "node scripts/make-icon.js",
     "build:win": "npm run icon && electron-builder --win"
   },
-  "keywords": [],
+  "keywords": [
+    "remote-desktop",
+    "remote-control",
+    "chat",
+    "lan",
+    "socket.io",
+    "electron"
+  ],
   "author": "",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aleemshahad/Romte_Desktop_pro.git"
+  },
   "dependencies": {
     "express": "^5.2.1",
     "multer": "^2.2.0",
+    "socket.io": "^4.8.3"
+  },
+  "optionalDependencies": {
     "robotjs": "^0.9.1",
-    "screenshot-desktop": "^1.15.6",
-    "socket.io": "^4.8.3",
-    "ws": "^8.21.3"
+    "screenshot-desktop": "^1.15.6"
   },
   "devDependencies": {
     "electron": "^31.7.7",

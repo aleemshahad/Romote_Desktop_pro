@@ -253,4 +253,40 @@ socket.on('chat:history', function (data) {
     messagesEl.scrollTop = messagesEl.scrollHeight;
 });
 
+// ---------- Toolbar ----------
+// Remote: open the control panel (in-app window under Electron, new tab in a
+// plain browser). Link: copy the LAN url (with access code) for the phone.
+// Exit: only shown in the Electron build; a browser tab can just be closed.
+const ctrlBtn = document.getElementById('btnControl');
+if (ctrlBtn) ctrlBtn.addEventListener('click', function () {
+    window.open(rdAuthUrl('/'), '_blank');
+});
+
+const linkBtn = document.getElementById('btnLink');
+if (linkBtn) linkBtn.addEventListener('click', function () {
+    fetch(rdAuthUrl('/api/lan-url'))
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+            const urls = (data && data.urls) || [];
+            if (!urls.length) throw new Error('no url');
+            if (legacyCopy(urls[0])) {
+                setStatus('📱 Phone link copied - open it in your phone browser' + (urls.length > 1 ? ' (more networks: ' + urls.slice(1).join(', ') + ')' : ''), '#4ade80');
+            } else {
+                window.prompt('Open this link on your phone:', urls.join('\n'));
+            }
+        })
+        .catch(function () {
+            window.prompt('Open this link on your phone:', location.origin + rdAuthUrl('/'));
+        });
+    setTimeout(function () { setStatus(''); }, 6000);
+});
+
+const quitBtn = document.getElementById('btnQuit');
+if (quitBtn && /Electron/i.test(navigator.userAgent)) {
+    quitBtn.hidden = false;
+    quitBtn.addEventListener('click', function () {
+        window.open('/__quit', '_blank');
+    });
+}
+
 inputEl.focus();

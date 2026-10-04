@@ -19,6 +19,10 @@ const config = require('../lib/config');
 
 let mainWindow = null;
 let chatWindow = null;
+let appToken = '';
+let quitting = false;
+
+const BASE = () => 'http://localhost:' + config.PORT;
 
 function stateFile() {
     return path.join(config.DATA_DIR, 'state.json');
@@ -40,56 +44,90 @@ function waitForServer(ms) {
     });
 }
 
-function createWindows(token) {
-    const iconPath = path.join(__dirname, '..', 'build', 'icon.png');
-    const base = 'http://localhost:' + config.PORT;
+// Route every window.open()/target=_blank from the UI:
+//  - /__quit            -> exit the app (chat toolbar's Exit button)
+//  - same-origin '/'     -> open/focus the in-app control window
+//  - same-origin '/..'   -> file downloads stay inside the app window
+//  - any other http(s)   -> system browser
+function wireWindow(win) {
+    win.webContents.setWindowOpenHandler(({ url }) => {
+        try {
+            const u = new URL(url);
+            if (u.protocol === 'http:' || u.protocol === 'https:') {
+                if (u.pathname === '/__quit') {
+                    quitApp();
+                    return { action: 'deny' };
+                }
+                if (u.origin === BASE()) {
+                    if (u.pathname.indexOf('/download/') === 0) {
+                        win.webContents.downloadURL(url);
+                    } else {
+                        openControlWindow();
+                    }
+                    return { action: 'deny' };
+                }
+                shell.openExternal(url);
+            }
+        } catch (err) {}
+        return { action: 'deny' };
+    });
+}
 
+function quitApp() {
+    quitting = true;
+    app.quit();
+}
+
+// The control panel - opened on demand from the chat window's 🖥️ button.
+// Closing it never quits the app; the chat window stays as the always-open UI.
+function openControlWindow() {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+        return;
+    }
     mainWindow = new BrowserWindow({
         width: 460,
         height: 860,
         minWidth: 380,
         minHeight: 600,
         title: 'Romte Remote',
-        icon: iconPath,
+        icon: path.join(__dirname, '..', 'build', 'icon.png'),
         backgroundColor: '#0a0c12',
         autoHideMenuBar: true,
         webPreferences: { contextIsolation: true }
     });
-    mainWindow.loadURL(base + '/?token=' + encodeURIComponent(token));
+    mainWindow.loadURL(BASE() + '/?token=' + encodeURIComponent(appToken));
+    wireWindow(mainWindow);
+    mainWindow.on('closed', () => { mainWindow = null; });
+}
 
+// Single window at launch: the chat window (with its toolbar buttons).
+// Under Electron no terminal and no external Chrome is involved at all.
+function createChatWindow(token) {
+    appToken = token;
     chatWindow = new BrowserWindow({
         width: 420,
         height: 720,
         minWidth: 340,
         minHeight: 480,
         title: 'Remote Desktop Chat',
-        icon: iconPath,
+        icon: path.join(__dirname, '..', 'build', 'icon.png'),
         backgroundColor: '#0a0c12',
         autoHideMenuBar: true,
         webPreferences: { contextIsolation: true }
     });
-    chatWindow.loadURL(base + '/chat?token=' + encodeURIComponent(token));
-
-    // Open external links (download links use the in-app browser, other
-    // http(s) links go to the system browser).
-    for (const win of [mainWindow, chatWindow]) {
-        win.webContents.setWindowOpenHandler(({ url }) => {
-            if (/^https?:\/\//.test(url) && url.indexOf(base) !== 0) shell.openExternal(url);
-            return { action: 'deny' };
-        });
-    }
+    chatWindow.loadURL(BASE() + '/chat?token=' + encodeURIComponent(token));
+    wireWindow(chatWindow);
 
     chatWindow.on('close', (e) => {
+        if (quitting) return;
         // The chat window is the "always open" chat: closing it just hides it
-        // and it comes back after a short while. To stop everything, close the
-        // main window (or use the tray / Alt+F4 on it).
+        // and it comes back after a short while.
         e.preventDefault();
         chatWindow.hide();
         setTimeout(() => { if (!chatWindow.isDestroyed()) chatWindow.showInactive(); }, 3000);
-    });
-    mainWindow.on('closed', () => {
-        mainWindow = null;
-        app.quit();
     });
 }
 
@@ -98,11 +136,14 @@ const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
     app.quit();
 } else {
+    app.on('before-quit', () => { quitting = true; });
+
     app.on('second-instance', () => {
-        if (mainWindow) {
-            if (mainWindow.isMinimized()) mainWindow.restore();
-            mainWindow.show();
-            mainWindow.focus();
+        const win = (mainWindow && !mainWindow.isDestroyed()) ? mainWindow : chatWindow;
+        if (win) {
+            if (win.isMinimized()) win.restore();
+            win.show();
+            win.focus();
         }
     });
 
@@ -124,7 +165,9 @@ if (!gotLock) {
             return;
         }
 
-        createWindows(state.token);
+        // ONE window only - the chat window. The control panel opens from
+        // its 🖥️ Remote button.
+        createChatWindow(state.token);
     });
 }
 

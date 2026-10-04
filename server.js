@@ -74,6 +74,32 @@ app.get('/api/verify', (req, res) => {
     res.status(401).json({ ok: false });
 });
 
+// Full LAN url (with access code) for the chat window's "📱 Link" button.
+// Token-guarded: an unauthenticated visitor must never learn the code.
+function lanAddresses() {
+    const out = [];
+    const seen = new Set();
+    const isVirtual = (name) => /virtualbox|vbox|vmware|hyper-v|vethernet|wsl|loopback/i.test(name);
+    const ifs = os.networkInterfaces();
+    for (const dev in ifs) {
+        if (isVirtual(dev)) continue;
+        for (const details of ifs[dev]) {
+            if (details.family === 'IPv4' && !details.internal && !seen.has(details.address)) {
+                seen.add(details.address);
+                out.push(details.address);
+            }
+        }
+    }
+    return out;
+}
+
+app.get('/api/lan-url', (req, res) => {
+    if (req.query.token !== authToken) return res.status(401).json({ ok: false });
+    const urls = lanAddresses().map((ip) => 'http://' + ip + ':' + config.PORT + '/?token=' + authToken);
+    if (!urls.length) urls.push('http://localhost:' + config.PORT + '/?token=' + authToken);
+    res.json({ ok: true, urls: urls });
+});
+
 // ---------- Static client UI ----------
 // Declared before express.static so these win over the static index.html
 // lookup and can attach the mandatory no-store headers.

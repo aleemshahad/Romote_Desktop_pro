@@ -20,7 +20,7 @@ Control your Windows PC from your phone — live screen streaming, mouse & keybo
 - **Clear chat history on both sides** with one button (server-side truncation)
 - **File transfer** — attach files from either side, download from the other
 - **Duplicate-proof delivery** — every message gets a stable UUID, clients render each id exactly once (survives restarts and reconnects)
-- **Always-open desktop chat window** — auto-launched as a frameless-style Chrome app window, never steals focus, self-heals if closed or duplicated
+- **Always-open desktop chat window** with a toolbar — **🖥️ Remote** (open the control panel), **📱 Link** (copy the phone URL with the access code), **⏻ Exit** — never steals focus, self-heals if closed or duplicated
 
 ### Security
 - **Access-code gate** — the server generates an 8-hex token on first run (persisted across restarts)
@@ -31,52 +31,98 @@ Control your Windows PC from your phone — live screen streaming, mouse & keybo
 - **Fetch PC clipboard → mobile** and **push mobile text → PC clipboard** from the UI
 
 ### Desktop App (optional)
-- **Electron shell** runs the same server in-process and opens real app windows (main control + chat)
+- **Electron shell** runs the same server in-process — **one window only** (the chat window with its toolbar); the control panel opens from its 🖥️ Remote button
+- **No terminal/console ever appears** for end users
 - **Custom app icon** generated procedurally (gradient tile + bolt, PNG + ICO)
 - **Windows installer + portable exe** built automatically by GitHub Actions
 
 ---
 
-## Quick Start (from source)
+## Installation
+
+### 🟢 Regular users — Windows desktop app (recommended)
+
+No terminal, no Node.js, nothing to type:
+
+1. Download the `.exe` from **[GitHub Releases](https://github.com/aleemshahad/Romte_Desktop_pro/releases)** (or the latest **Actions** run artifact — *romte-remote-windows*)
+2. Run it — installer version or the portable `RomteRemote-Portable.exe`
+3. **One window opens: the chat window.** Its toolbar has everything:
+
+   | Button | What it does |
+   |---|---|
+   | 🖥️ **Remote** | Opens the remote-control panel (screen + mouse/keyboard) |
+   | 📱 **Link** | Copies the phone link (with access code) to your clipboard |
+   | ⏻ **Exit** | Quits the app (and its server) cleanly |
+
+No cmd/console window ever appears — the packaged app is a normal GUI program.
+
+### 🔵 Advanced users — install from the terminal (npm)
+
+The project is a proper npm package (`bin: romte-remote`), installable straight from GitHub — **no npm publish needed**:
+
+```bash
+# one-shot (no install)
+npx github:aleemshahad/Romte_Desktop_pro
+
+# or install globally, then run any time
+npm install -g github:aleemshahad/Romte_Desktop_pro
+romte-remote
+```
+
+The server starts in your terminal and prints the access code and URLs:
+
+```
+Access code: 23ed2e16
+Mobile:      http://192.168.x.x:5000/?token=23ed2e16
+This PC:     http://localhost:5000/?token=23ed2e16
+```
+
+> **Note:** `robotjs` / `screenshot-desktop` are *optional* dependencies — if a native build is missing on your machine the app still installs and runs; mouse/keyboard control or streaming is auto-disabled and reported in the banner.
+
+Once the package is on the npm registry, `npm install -g romte-remote` will work too (publishing is a one-time `npm publish` by the maintainer).
+
+### ⚫ From source
 
 **Requirements:** Node.js 18+ (Windows)
 
 ```powershell
+git clone https://github.com/aleemshahad/Romte_Desktop_pro.git
+cd Romte_Desktop_pro
 npm install
 npm start
 ```
 
 Or simply double-click **`run_server.bat`**.
 
-On startup the console prints everything you need:
-
-```
-Access code: 23ed2e16
-Mobile:      http://192.168.x.x:5000/?token=23ed2e16
-This PC:     http://localhost:5000/?token=23ed2e16
-Chat window: http://localhost:5000/chat
-```
-
-1. **Phone** — open the `Mobile` URL on the same Wi-Fi network and enter the access code (or it is auto-filled via the `?token=` link).
-2. **PC** — the chat window opens automatically; the control page is at the `This PC` URL.
+1. **Phone** — open the `Mobile` URL on the same Wi-Fi network (or enter the access code at `/gate`).
+2. **PC** — the chat window opens automatically; use its 🖥️ Remote button for the control panel.
 3. Anything sent from mobile appears on the PC instantly, and vice versa.
 
 ---
 
-## Desktop App Build
+## From Open Source Code to EXE (how the build works)
 
-### Via GitHub Actions (recommended, nothing to install)
+The repository is 100% open source; the Windows executable is produced **from this same code** by `electron-builder`:
 
-1. Push the repo to GitHub (workflow: **`.github/workflows/build-desktop.yml`**)
-2. **Actions** tab → *Build Romte Remote (Windows)* → **Run workflow** (or push a tag like `v2.0.1`)
-3. Download the **Artifacts** when the run finishes:
+1. **`desktop/main.js`** — a tiny Electron shell that starts `server.js` in-process and opens the single chat window (no browser, no terminal)
+2. **`package.json → "build"`** — electron-builder configuration: app id, NSIS installer + portable targets, `build/icon.ico`
+3. **`npm run icon`** — `scripts/make-icon.js` generates the icon procedurally (no binary assets in git)
+4. **`.github/workflows/build-desktop.yml`** — GitHub Actions builds it on a clean Windows runner
+
+### Get a fresh EXE
+
+**Via GitHub Actions (recommended, nothing to install):**
+
+1. **Actions** tab → *Build Romte Remote (Windows)* → **Run workflow** (or push a tag like `v2.1.1`)
+2. Download the **Artifacts** when the run finishes:
    - `Romte Remote <version> windows x64.exe` — NSIS installer
    - `RomteRemote-Portable.exe` — portable, run anywhere
 
-### Locally
+**Locally:**
 
 ```powershell
-npm run build:win   # regenerates the icon, then electron-builder --win
+npm install        # dev dependencies (electron, electron-builder)
+npm run build:win  # regenerates the icon, then electron-builder --win
 ```
 
 Output lands in `dist/`. During development:
@@ -92,6 +138,7 @@ npm run icon         # regenerate build/icon.png + build/icon.ico only
 
 ```
 ├── server.js              # entry point: HTTP + Socket.IO + access token
+├── bin/cli.js             # npm global command: `romte-remote`
 ├── run_server.bat         # one-click launcher
 ├── lib/
 │   ├── config.js          # ports, paths, tunables (env-overridable)
@@ -107,7 +154,7 @@ npm run icon         # regenerate build/icon.png + build/icon.ico only
 │   ├── chat.html / chat.js    # always-open PC chat window
 │   ├── gate.html              # access-code entry page
 │   └── auth.js / style.css
-├── desktop/main.js        # Electron shell (server in-process, 2 windows)
+├── desktop/main.js        # Electron shell (server in-process, single chat window)
 ├── scripts/make-icon.js   # procedural app-icon generator
 ├── build/                 # icon.png / icon.ico (electron-builder resources)
 └── .github/workflows/build-desktop.yml   # Windows CI build
@@ -130,8 +177,8 @@ npm run icon         # regenerate build/icon.png + build/icon.ico only
 
 - **Node.js + Express 5** — HTTP server & static UI
 - **Socket.IO 4** — low-latency bidirectional events (auth in the handshake)
-- **robotjs** — native mouse/keyboard control
-- **screenshot-desktop** — fast screen capture loop
+- **robotjs** — native mouse/keyboard control *(optional — auto-disabled if unavailable)*
+- **screenshot-desktop** — fast screen capture loop *(optional)*
 - **multer** — file uploads
 - **Electron + electron-builder** — optional packaged Windows app
 - **GitHub Actions** — CI builds (installer + portable exe)

@@ -11,6 +11,12 @@
 <body class="chat-body">
 
     <div class="chat-container">
+        <div class="chat-toolbar">
+            <span class="tool-brand">💬 Romte</span>
+            <button id="btnControl" class="tool-btn" title="Open the remote-control panel">🖥️ Remote</button>
+            <button id="btnLink" class="tool-btn" title="Copy the link to open on your phone">📱 Link</button>
+            <button id="btnQuit" class="tool-btn tool-quit" title="Exit the app" hidden>⏻ Exit</button>
+        </div>
         <div id="chatMessages" class="chat-messages"></div>
         <div class="chat-input-group">
             <input type="text" id="chatInput" class="big-input" placeholder="Type a message...">
