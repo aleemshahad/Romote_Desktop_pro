@@ -9,6 +9,9 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+    # Needed so the tag build can publish the EXEs to a GitHub Release.
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -33,11 +36,18 @@ jobs:
         continue-on-error: true
 
       - name: Package desktop app
+        # On tag builds electron-builder publishes the EXEs to the GitHub
+        # Release automatically (that's what GH_TOKEN is used for).
         run: npx electron-builder --win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: romte-remote-windows
-          path: dist
+          path: |
+            dist/*.exe
+            dist/*.blockmap
+            dist/*.yml
           if-no-files-found: error
