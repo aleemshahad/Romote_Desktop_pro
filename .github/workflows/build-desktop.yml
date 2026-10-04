@@ -1,0 +1,43 @@
+name: Build Romte Remote (Windows)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate app icon
+        run: node scripts/make-icon.js
+
+      - name: Rebuild native modules for Electron
+        # robotjs is a native module: rebuild it against the Electron ABI.
+        # If it fails the server still works (mouse/keyboard control is
+        # auto-disabled), so don't fail the whole build on it.
+        run: npx electron-builder install-app-deps
+        continue-on-error: true
+
+      - name: Package desktop app
+        run: npx electron-builder --win
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: romte-remote-windows
+          path: dist
+          if-no-files-found: error

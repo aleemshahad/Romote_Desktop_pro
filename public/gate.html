@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Access Required - Romte Remote</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="gate-body">
+    <div class="gate-card">
+        <div class="gate-icon">🔐</div>
+        <h1 class="gate-title">Access Required</h1>
+        <p class="gate-sub">Enter the 8-digit access code shown in the server console<br>to unlock this remote desktop.</p>
+        <input type="text" id="gateToken" class="gate-input" maxlength="8" placeholder="••••••••" autocomplete="off" spellcheck="false">
+        <button id="gateBtn" class="gate-btn">Unlock</button>
+        <div id="gateError" class="gate-error"></div>
+        <div class="gate-hint">Code is printed in the terminal when the server starts,<br>e.g. <code>Access code: 9f3a21bc</code></div>
+    </div>
+
+    <script>
+        (function () {
+            'use strict';
+            var input = document.getElementById('gateToken');
+            var btn = document.getElementById('gateBtn');
+            var err = document.getElementById('gateError');
+
+            function tryUnlock() {
+                var code = input.value.trim().toLowerCase();
+                if (!code) return;
+                err.textContent = '';
+                btn.disabled = true;
+                btn.textContent = 'Checking…';
+                fetch('/api/verify?token=' + encodeURIComponent(code))
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data && data.ok) {
+                            try { localStorage.setItem('rd_token', code); } catch (e) {}
+                            location.href = '/';
+                        } else {
+                            err.textContent = 'Wrong code. Try again.';
+                            input.value = '';
+                            input.focus();
+                            btn.disabled = false;
+                            btn.textContent = 'Unlock';
+                        }
+                    })
+                    .catch(function () {
+                        err.textContent = 'Server unreachable. Is it running?';
+                        btn.disabled = false;
+                        btn.textContent = 'Unlock';
+                    });
+            }
+
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') tryUnlock();
+            });
+            input.addEventListener('input', function () {
+                input.value = input.value.toLowerCase().replace(/[^a-f0-9]/g, '');
+            });
+            btn.addEventListener('click', tryUnlock);
+
+            // Already unlocked? Straight back in.
+            (function () {
+                var saved = null;
+                try { saved = localStorage.getItem('rd_token'); } catch (e) {}
+                if (!saved) return;
+                fetch('/api/verify?token=' + encodeURIComponent(saved))
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) { if (data && data.ok) location.replace('/'); })
+                    .catch(function () {});
+            })();
+
+            input.focus();
+        })();
+    </script>
+</body>
+</html>

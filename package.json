@@ -1,0 +1,62 @@
+{
+  "name": "romte-remote",
+  "version": "2.0.0",
+  "description": "Romte Remote Desktop + PC<->Mobile Chat",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "desktop": "electron desktop/main.js",
+    "icon": "node scripts/make-icon.js",
+    "build:win": "npm run icon && electron-builder --win"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1",
+    "multer": "^2.2.0",
+    "robotjs": "^0.9.1",
+    "screenshot-desktop": "^1.15.6",
+    "socket.io": "^4.8.3",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.romte.remote",
+    "productName": "Romte Remote",
+    "main": "desktop/main.js",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "server.js",
+      "lib/**/*",
+      "public/**/*",
+      "desktop/**/*",
+      "package.json",
+      "build/icon.png",
+      "build/icon.ico"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "${productName} ${version} ${os} ${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Romte Remote"
+    },
+    "portable": {
+      "executableName": "RomteRemote-Portable.exe"
+    }
+  }
+}

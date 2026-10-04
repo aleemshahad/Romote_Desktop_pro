@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote Desktop Chat</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/auth.js"></script>
+</head>
+<body class="chat-body">
+
+    <div class="chat-container">
+        <div id="chatMessages" class="chat-messages"></div>
+        <div class="chat-input-group">
+            <input type="text" id="chatInput" class="big-input" placeholder="Type a message...">
+            <button class="big-send-btn" id="sendBtn">Send</button>
+        </div>
+        <div class="chat-file-group">
+            <label for="chatFileElem" class="upload-label">📎 Attach File(s)</label>
+            <button id="clearBtn" class="clear-btn" title="Clear chat history on both sides">🗑️ Clear</button>
+        </div>
+        <div id="chatStatus" class="chat-status"></div>
+    </div>
+
+    <script src="/chat.js"></script>
+</body>
+</html>

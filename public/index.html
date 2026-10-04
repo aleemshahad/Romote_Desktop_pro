@@ -1,0 +1,213 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pro Remote & Live Desktop</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/auth.js"></script>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="app-title"><span class="app-logo">⚡</span> Romte Remote</div>
+        <div id="connStatus" class="conn-pill conn-bad">
+            <span class="conn-dot"></span>
+            <span id="connText">Connecting…</span>
+        </div>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('screen-tab', this)">📺 Live Screen</button>
+        <button class="tab-btn" onclick="switchTab('keyboard-tab', this)">⌨️ PC Keys</button>
+        <button class="tab-btn" onclick="switchTab('chat-tab', this)">💬 Chat</button>
+    </div>
+
+    <!-- ================= TAB 1: LIVE DESKTOP SCREEN ================= -->
+    <div id="screen-tab" class="tab-content active">
+        
+        <!-- Large Text Box with Send Button -->
+        <div class="input-group">
+            <input type="text" id="mainTextInput" class="big-input" placeholder="Type text here to send..." onkeydown="if(event.key==='Enter') sendMainText()">
+            <button class="big-send-btn" onclick="sendMainText()">Send</button>
+        </div>
+
+        <!-- Clipboard Buttons -->
+        <div class="input-group" style="margin-bottom: 6px;">
+            <button class="big-send-btn" onclick="getClipboard()" style="background: #059669; width: 48%;">📋 Get PC Clipboard</button>
+            <button class="big-send-btn" onclick="setClipboard()" style="background: #7c3aed; width: 48%;">📤 Copy to PC Clipboard</button>
+        </div>
+        <div id="clipboardStatus" style="font-size: 12px; color: #888; margin-bottom: 6px; min-height: 18px;"></div>
+
+        <!-- Live Canvas Container -->
+        <div id="screen-container">
+            <div class="screen-toolbar">
+                <div class="toolbar-group">
+                    <button id="streamToggleBtn" class="tool-btn stream-on" onclick="toggleStream()">📺 Stream: ON</button>
+                    <button id="btnTrackpad" class="tool-btn active-mode" onclick="setMode('trackpad')">🖱️ Trackpad</button>
+                    <button id="btnTouch" class="tool-btn" onclick="setMode('touch')">🎯 Touch</button>
+                    <button id="btnPan" class="tool-btn" onclick="setMode('pan')">🖐️ Pan</button>
+                </div>
+                <div class="toolbar-group">
+                    <button class="tool-btn zoom-btn" onclick="adjustZoom(0.4)">+</button>
+                    <button class="tool-btn zoom-btn" onclick="adjustZoom(-0.4)">−</button>
+                    <button class="tool-btn zoom-btn" style="font-size: 11px;" onclick="resetZoom()">1x</button>
+                </div>
+            </div>
+
+            <canvas id="screen-canvas"></canvas>
+
+            <div id="pausedOverlay" class="paused-overlay">
+                <span>⏸️ Live Stream Paused</span>
+                <small style="margin-top: 6px; color: #666;">(0% CPU & Network Load)</small>
+            </div>
+        </div>
+
+        <!-- Mouse Controls & Arrows Below Screen -->
+        <div class="btn-grid cols-4">
+            <button class="btn-mouse" onclick="sendAction('click', 'left')">Left Click</button>
+            <button class="btn-arrow" onclick="sendKey('up')">▲ Up</button>
+            <button class="btn-mouse" onclick="sendAction('click', 'right')">Right Click</button>
+            <button class="btn-mouse" onclick="sendAction('click', 'middle')">Mid Click</button>
+
+            <button class="btn-arrow" onclick="sendKey('left')">◀ Left</button>
+            <button class="btn-arrow" onclick="sendKey('down')">▼ Down</button>
+            <button class="btn-arrow" onclick="sendKey('right')">▶ Right</button>
+            <button class="btn-mod" style="background:#1e3a8a; color:white;" onclick="sendKey('enter')">↵ Enter</button>
+        </div>
+    </div>
+
+    <!-- ================= TAB 2: PC KEYS & VOICE TYPING ================= -->
+    <div id="keyboard-tab" class="tab-content">
+        
+        <!-- Live Realtime Voice & Gboard Typing Box in PC Keys Tab -->
+        <div class="section-label">🎙️ Live Voice & Gboard Typing</div>
+        <div class="voice-box">
+            <input type="text" id="voiceTextInput" class="big-input" placeholder="Speak (Gboard Mic) or type to stream live...">
+            <button id="browserVoiceBtn" class="big-voice-btn" onclick="toggleBrowserVoice()">🎙️ Voice</button>
+        </div>
+
+        <!-- Function Keys -->
+        <div class="section-label">Function Keys</div>
+        <div class="btn-grid cols-6">
+            <button class="btn-fn" onclick="sendKey('f1')">F1</button>
+            <button class="btn-fn" onclick="sendKey('f2')">F2</button>
+            <button class="btn-fn" onclick="sendKey('f3')">F3</button>
+            <button class="btn-fn" onclick="sendKey('f4')">F4</button>
+            <button class="btn-fn" onclick="sendKey('f5')">F5</button>
+            <button class="btn-fn" onclick="sendKey('f6')">F6</button>
+            <button class="btn-fn" onclick="sendKey('f7')">F7</button>
+            <button class="btn-fn" onclick="sendKey('f8')">F8</button>
+            <button class="btn-fn" onclick="sendKey('f9')">F9</button>
+            <button class="btn-fn" onclick="sendKey('f10')">F10</button>
+            <button class="btn-fn" onclick="sendKey('f11')">F11</button>
+            <button class="btn-fn" onclick="sendKey('f12')">F12</button>
+        </div>
+
+        <!-- Navigation & Toggles -->
+        <div class="section-label">Navigation & Toggles</div>
+        <div class="btn-grid cols-4">
+            <button class="btn-nav" onclick="sendKey('escape')">Esc</button>
+            <button class="btn-nav" onclick="sendKey('tab')">Tab</button>
+            <button class="btn-nav" onclick="sendKey('capslock')">Caps Lock</button>
+            <button class="btn-nav" onclick="sendKey('printscreen')">PrtSc</button>
+
+            <button class="btn-nav" onclick="sendKey('insert')">Insert</button>
+            <button class="btn-nav" style="background:#5c1d1d; color:white;" onclick="sendKey('delete')">Delete</button>
+            <button class="btn-nav" onclick="sendKey('home')">Home</button>
+            <button class="btn-nav" onclick="sendKey('end')">End</button>
+
+            <button class="btn-nav" onclick="sendKey('pageup')">Page Up</button>
+            <button class="btn-nav" onclick="sendKey('pagedown')">Page Down</button>
+            <button class="btn-nav" onclick="sendKey('space')">Space</button>
+            <button class="btn-nav" style="background:#5c1d1d; color:white;" onclick="sendKey('backspace')">⌫ Back</button>
+        </div>
+
+        <!-- Modifiers -->
+        <div class="section-label">Modifiers</div>
+        <div class="btn-grid cols-4">
+            <button class="btn-mod" onclick="sendKey('control')">Ctrl</button>
+            <button class="btn-mod" onclick="sendKey('alt')">Alt</button>
+            <button class="btn-mod" onclick="sendKey('shift')">⇧ Shift</button>
+            <button class="btn-mod" onclick="sendKey('command')">⊞ Win</button>
+        </div>
+
+        <!-- Shortcuts -->
+        <div class="section-label">System Shortcuts</div>
+        <div class="btn-grid cols-5">
+            <button class="btn-shortcut" onclick="sendCombo('a', ['control'])">Ctrl+A</button>
+            <button class="btn-shortcut" onclick="sendCombo('c', ['control'])">Ctrl+C</button>
+            <button class="btn-shortcut" onclick="sendCombo('v', ['control'])">Ctrl+V</button>
+            <button class="btn-shortcut" onclick="sendCombo('x', ['control'])">Ctrl+X</button>
+            <button class="btn-shortcut" onclick="sendCombo('z', ['control'])">Ctrl+Z</button>
+
+            <button class="btn-shortcut" onclick="sendCombo('y', ['control'])">Ctrl+Y</button>
+            <button class="btn-shortcut" onclick="sendCombo('s', ['control'])">Ctrl+S</button>
+            <button class="btn-shortcut" onclick="sendCombo('w', ['control'])">Ctrl+W</button>
+            <button class="btn-shortcut" onclick="sendCombo('f', ['control'])">Ctrl+F</button>
+            <button class="btn-shortcut" onclick="sendCombo('tab', ['alt'])">Alt+Tab</button>
+
+            <button class="btn-shortcut" onclick="sendCombo('f4', ['alt'])">Alt+F4</button>
+            <button class="btn-shortcut" onclick="sendCombo('d', ['command'])">Win+D</button>
+            <button class="btn-shortcut" onclick="sendCombo('r', ['command'])">Win+R</button>
+            <button class="btn-shortcut" onclick="sendCombo('e', ['command'])">Win+E</button>
+            <button class="btn-shortcut" onclick="sendCombo('l', ['command'])">Win+L</button>
+        </div>
+
+        <!-- Media & Volume -->
+        <div class="section-label">Media & Volume</div>
+        <div class="btn-grid cols-6">
+            <button class="btn-media" onclick="sendAction('media', 'play')">⏯ Play</button>
+            <button class="btn-media" onclick="sendAction('media', 'mute')">🔇 Mute</button>
+            <button class="btn-media" onclick="sendAction('media', 'volup')">🔊 Vol+</button>
+            <button class="btn-media" onclick="sendAction('media', 'voldown')">🔉 Vol-</button>
+            <button class="btn-media" onclick="sendAction('media', 'prev')">⏮ Prev</button>
+            <button class="btn-media" onclick="sendAction('media', 'next')">⏭ Next</button>
+        </div>
+
+        <!-- Numpad -->
+        <div class="section-label">Numeric Pad</div>
+        <div class="btn-grid cols-4">
+            <button class="btn-numpad" onclick="sendType('7')">7</button>
+            <button class="btn-numpad" onclick="sendType('8')">8</button>
+            <button class="btn-numpad" onclick="sendType('9')">9</button>
+            <button class="btn-numpad" onclick="sendType('/')">/</button>
+
+            <button class="btn-numpad" onclick="sendType('4')">4</button>
+            <button class="btn-numpad" onclick="sendType('5')">5</button>
+            <button class="btn-numpad" onclick="sendType('6')">6</button>
+            <button class="btn-numpad" onclick="sendType('*')">*</button>
+
+            <button class="btn-numpad" onclick="sendType('1')">1</button>
+            <button class="btn-numpad" onclick="sendType('2')">2</button>
+            <button class="btn-numpad" onclick="sendType('3')">3</button>
+            <button class="btn-numpad" onclick="sendType('-')">-</button>
+
+            <button class="btn-numpad" onclick="sendType('0')">0</button>
+            <button class="btn-numpad" onclick="sendType('.')">.</button>
+            <button class="btn-numpad" onclick="sendType('+')">+</button>
+            <button class="btn-mod" style="background:#1e3a8a; color:white;" onclick="sendKey('enter')">↵ Enter</button>
+        </div>
+    </div>
+
+    <!-- ================= TAB 3: CHAT ================= -->
+    <div id="chat-tab" class="tab-content">
+        <div class="chat-container">
+            <div id="chatMessages" class="chat-messages"></div>
+            <div class="chat-input-group">
+                <input type="text" id="chatInput" class="big-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+                <button class="big-send-btn" onclick="sendChatMessage()">Send</button>
+            </div>
+            <div class="chat-file-group">
+                <input type="file" id="chatFileElem" class="file-input" multiple onchange="sendChatFiles(this.files)">
+                <label for="chatFileElem" class="upload-label">📎 Attach File(s)</label>
+                <button id="clearChatBtn" class="clear-btn" title="Clear chat history on both sides">🗑️ Clear</button>
+            </div>
+            <div id="chatStatus" style="font-size: 12px; color: #888; margin-top: 6px; min-height: 16px;"></div>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
