@@ -504,21 +504,46 @@
                 .replace(/>/g, '&gt;');
         }
 
+        function legacyCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            ta.setSelectionRange(0, text.length);
+            let ok = false;
+            try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+            document.body.removeChild(ta);
+            return ok;
+        }
+
         function copyToClipboard(btn) {
             const msg = btn.closest('.chat-message');
             const text = msg && msg.dataset.copyText ? msg.dataset.copyText : '';
-            navigator.clipboard.writeText(text).then(function() {
-                const original = btn.innerText;
+            const original = btn.innerText;
+            const ok = function() {
                 btn.innerText = '✅ Copied!';
                 btn.style.color = '#4ade80';
                 setTimeout(function() {
                     btn.innerText = original;
                     btn.style.color = '';
                 }, 1500);
-            }).catch(function() {
+            };
+            const fail = function() {
                 btn.innerText = '❌ Failed';
                 setTimeout(function() { btn.innerText = '📋 Copy'; }, 1500);
-            });
+            };
+            // navigator.clipboard only exists in secure contexts (HTTPS/localhost);
+            // plain-HTTP mobile sessions must fall back to execCommand('copy').
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(ok).catch(function() {
+                    legacyCopy(text) ? ok() : fail();
+                });
+            } else {
+                legacyCopy(text) ? ok() : fail();
+            }
         }
 
         function sendChatMessage() {

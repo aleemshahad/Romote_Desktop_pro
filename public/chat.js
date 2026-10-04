@@ -100,21 +100,46 @@ function clearMessages() {
     rendered.clear();
 }
 
+function legacyCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+}
+
 function copyToClipboard(btn) {
     const msg = btn.closest('.chat-message');
     const text = msg && msg.dataset.copyText ? msg.dataset.copyText : '';
     const original = btn.textContent;
-    navigator.clipboard.writeText(text).then(function () {
+    const ok = function () {
         btn.textContent = '✅ Copied!';
         btn.style.color = '#4ade80';
         setTimeout(function () {
             btn.textContent = original;
             btn.style.color = '';
         }, 1500);
-    }).catch(function () {
+    };
+    const fail = function () {
         btn.textContent = '❌ Failed';
         setTimeout(function () { btn.textContent = original; }, 1500);
-    });
+    };
+    // navigator.clipboard only exists in secure contexts (HTTPS/localhost);
+    // plain-HTTP mobile sessions must fall back to execCommand('copy').
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(ok).catch(function () {
+            legacyCopy(text) ? ok() : fail();
+        });
+    } else {
+        legacyCopy(text) ? ok() : fail();
+    }
 }
 
 function sendChatMessage() {
@@ -168,15 +193,19 @@ inputEl.addEventListener('keydown', function (e) {
         sendChatMessage();
     }
 });
-fileEl.addEventListener('change', function () {
-    sendChatFiles(this.files);
-    this.value = '';
-});
+// Null-guarded: a missing element must never abort the script and silently
+// drop every socket handler registered below (that bug left the window blank).
+if (fileEl) {
+    fileEl.addEventListener('change', function () {
+        sendChatFiles(this.files);
+        this.value = '';
+    });
+}
 
 // Clear chat history on both sides: confirm, wipe locally, ask the server to
 // truncate the JSONL and tell every other client.
 const clearBtn = document.getElementById('clearBtn');
-clearBtn.addEventListener('click', function () {
+if (clearBtn) clearBtn.addEventListener('click', function () {
     if (!confirm('Clear chat history on BOTH the PC and the mobile side?')) return;
     clearMessages();
     socket.emit('chat:clear');
