@@ -7,6 +7,7 @@
 const { app, BrowserWindow, Menu, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const net = require('net');
 
 // Desktop app keeps user data in %APPDATA%\RomteRemote instead of the
 // dev-time E:\ default. Must be set before lib/config is loaded (it reads
@@ -78,6 +79,18 @@ function quitApp() {
     app.quit();
 }
 
+// Is TCP port already bound (another app / stale server)? Probe before we
+// require the server so a conflict shows a clear dialog instead of the
+// silent process.exit(1) inside server.js.
+function portInUse(port) {
+    return new Promise((resolve) => {
+        const probe = net.createServer();
+        probe.once('error', (err) => resolve(!!err && err.code === 'EADDRINUSE'));
+        probe.once('listening', () => probe.close(() => resolve(false)));
+        probe.listen(port, '0.0.0.0');
+    });
+}
+
 // The control panel - opened on demand from the chat window's 🖥️ button.
 // Closing it never quits the app; the chat window stays as the always-open UI.
 function openControlWindow() {
@@ -121,14 +134,9 @@ function createChatWindow(token) {
     chatWindow.loadURL(BASE() + '/chat?token=' + encodeURIComponent(token));
     wireWindow(chatWindow);
 
-    chatWindow.on('close', (e) => {
-        if (quitting) return;
-        // The chat window is the "always open" chat: closing it just hides it
-        // and it comes back after a short while.
-        e.preventDefault();
-        chatWindow.hide();
-        setTimeout(() => { if (!chatWindow.isDestroyed()) chatWindow.showInactive(); }, 3000);
-    });
+    // No close-resist here: installers, OS shutdown and the X button must be
+    // able to close the window (window-all-closed then quits the app).
+    chatWindow.on('closed', () => { chatWindow = null; });
 }
 
 const gotLock = app.requestSingleInstanceLock();
@@ -150,6 +158,16 @@ if (!gotLock) {
     app.whenReady().then(async () => {
         Menu.setApplicationMenu(null);
         app.setAppUserModelId('com.romte.remote');
+
+        if (await portInUse(config.PORT)) {
+            dialog.showErrorBox(
+                'Romte Remote',
+                'Port ' + config.PORT + ' is already in use by another application (or a stale copy of this app).\n\n' +
+                'Close the other copy and start Romte Remote again.'
+            );
+            app.quit();
+            return;
+        }
 
         // Start the server in this process (it prints its banner to stdout,
         // which is a no-op in a packaged build).
