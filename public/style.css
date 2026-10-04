@@ -453,6 +453,72 @@ body.chat-body .chat-messages { margin-bottom: 8px; }
 .tool-quit { color: var(--red); border-color: rgba(248, 113, 113, 0.4); }
 .tool-quit:hover { background: rgba(248, 113, 113, 0.15); border-color: var(--red); }
 
+/* ---------- Connection info panel (replaces the terminal banner) ---------- */
+.info-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.62);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    z-index: 60;
+}
+.info-modal[hidden] { display: none; }
+.info-card {
+    width: 100%;
+    max-width: 380px;
+    max-height: 86vh;
+    overflow-y: auto;
+    background: var(--panel-solid);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+    animation: fadeIn 0.2s ease;
+}
+.info-head { font-size: 14px; font-weight: 700; color: var(--text); }
+.info-hint { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+.info-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin: 12px 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.info-row {
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    word-break: break-all;
+    color: var(--text);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.info-row:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.25); }
+.info-row:active { transform: scale(0.99); }
+.info-code { color: #4ade80; font-weight: 700; font-size: 14px; letter-spacing: 1px; }
+.info-close {
+    width: 100%;
+    margin-top: 10px;
+    padding: 9px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.info-close:hover { background: rgba(255, 255, 255, 0.13); }
+
 /* ---------- Access gate page ---------- */
 .gate-body {
     display: flex;

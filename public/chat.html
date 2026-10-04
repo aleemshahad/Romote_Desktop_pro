@@ -14,7 +14,7 @@
         <div class="chat-toolbar">
             <span class="tool-brand">💬 Romte</span>
             <button id="btnControl" class="tool-btn" title="Open the remote-control panel">🖥️ Remote</button>
-            <button id="btnLink" class="tool-btn" title="Copy the link to open on your phone">📱 Link</button>
+            <button id="btnLink" class="tool-btn" title="Access code & phone links (tap a line to copy)">📱 Link</button>
             <button id="btnQuit" class="tool-btn tool-quit" title="Exit the app" hidden>⏻ Exit</button>
         </div>
         <div id="chatMessages" class="chat-messages"></div>
@@ -28,6 +28,26 @@
             <button id="clearBtn" class="clear-btn" title="Clear chat history on both sides">🗑️ Clear</button>
         </div>
         <div id="chatStatus" class="chat-status"></div>
+    </div>
+
+    <!-- Connection info panel: the old terminal banner (access code + links),
+         shown inside the app because packaged builds have no terminal. -->
+    <div id="infoModal" class="info-modal" hidden>
+        <div class="info-card">
+            <div class="info-head">ℹ️ Connection info</div>
+            <div class="info-hint">Tap any line to copy it</div>
+
+            <div class="info-label">🔑 Access code</div>
+            <div id="infoToken" class="info-row info-code"></div>
+
+            <div class="info-label">📱 Open on your phone (same Wi-Fi)</div>
+            <div id="infoUrls"></div>
+
+            <div class="info-label">💻 This PC</div>
+            <div id="infoPc" class="info-row"></div>
+
+            <button id="infoClose" class="info-close">Close</button>
+        </div>
     </div>
 
     <script src="/chat.js"></script>

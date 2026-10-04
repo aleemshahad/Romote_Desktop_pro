@@ -20,7 +20,7 @@ Control your Windows PC from your phone — live screen streaming, mouse & keybo
 - **Clear chat history on both sides** with one button (server-side truncation)
 - **File transfer** — attach files from either side, download from the other
 - **Duplicate-proof delivery** — every message gets a stable UUID, clients render each id exactly once (survives restarts and reconnects)
-- **Always-open desktop chat window** with a toolbar — **🖥️ Remote** (open the control panel), **📱 Link** (copy the phone URL with the access code), **⏻ Exit** — never steals focus, self-heals if closed or duplicated
+- **Always-open desktop chat window** with a toolbar — **🖥️ Remote** (open the control panel), **📱 Link** (connection info panel: access code + phone links, tap to copy), **⏻ Exit** — never steals focus, self-heals if closed or duplicated
 
 ### Security
 - **Access-code gate** — the server generates an 8-hex token on first run (persisted across restarts)
@@ -51,8 +51,13 @@ No terminal, no Node.js, nothing to type:
    | Button | What it does |
    |---|---|
    | 🖥️ **Remote** | Opens the remote-control panel (screen + mouse/keyboard) |
-   | 📱 **Link** | Copies the phone link (with access code) to your clipboard |
+   | 📱 **Link** | Opens the **connection info panel** — access code + phone links (tap any line to copy) |
    | ⏻ **Exit** | Quits the app (and its server) cleanly |
+
+   > **Where are the terminal links?** The packaged app has no console, so the
+   > banner the server prints on startup (access code, mobile URL, PC URL) lives
+   > behind **📱 Link** — and the panel **opens automatically on the first run**.
+   > Nothing to type: copy a phone link, paste it in your phone's browser.
 
 No cmd/console window ever appears — the packaged app is a normal GUI program.
 

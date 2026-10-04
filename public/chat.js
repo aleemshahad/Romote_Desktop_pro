@@ -262,24 +262,78 @@ if (ctrlBtn) ctrlBtn.addEventListener('click', function () {
     window.open(rdAuthUrl('/'), '_blank');
 });
 
-const linkBtn = document.getElementById('btnLink');
-if (linkBtn) linkBtn.addEventListener('click', function () {
+// ---------- Connection info panel ----------
+// The packaged EXE has no terminal, so the banner the server used to print
+// (access code + URLs) lives here instead: 📱 Link opens it, and it also
+// opens automatically on the very first run.
+const infoModal = document.getElementById('infoModal');
+
+function copyInfoLine(text) {
+    if (legacyCopy(text)) {
+        setStatus('📋 Copied!', '#4ade80');
+        setTimeout(function () { setStatus(''); }, 2500);
+    } else {
+        window.prompt('Copy:', text);
+    }
+}
+
+function infoRow(text, extraClass) {
+    const row = document.createElement('div');
+    row.className = 'info-row' + (extraClass ? ' ' + extraClass : '');
+    row.textContent = text;
+    row.addEventListener('click', function () { copyInfoLine(text); });
+    return row;
+}
+
+function openInfo() {
     fetch(rdAuthUrl('/api/lan-url'))
         .then(function (res) { return res.json(); })
         .then(function (data) {
+            const tok = (data && data.token) || AUTH_TOKEN || '';
+            const tokEl = document.getElementById('infoToken');
+            tokEl.textContent = tok || '(not set)';
+            tokEl.onclick = function () { copyInfoLine(tok); };
+
+            const urlsBox = document.getElementById('infoUrls');
+            urlsBox.innerHTML = '';
             const urls = (data && data.urls) || [];
-            if (!urls.length) throw new Error('no url');
-            if (legacyCopy(urls[0])) {
-                setStatus('📱 Phone link copied - open it in your phone browser' + (urls.length > 1 ? ' (more networks: ' + urls.slice(1).join(', ') + ')' : ''), '#4ade80');
+            if (urls.length) {
+                urls.forEach(function (u) { urlsBox.appendChild(infoRow(u)); });
             } else {
-                window.prompt('Open this link on your phone:', urls.join('\n'));
+                urlsBox.appendChild(infoRow(location.origin + rdAuthUrl('/')));
             }
+
+            const pcEl = document.getElementById('infoPc');
+            const pcUrl = (data && data.pcUrl) || (location.origin + rdAuthUrl('/'));
+            pcEl.textContent = pcUrl;
+            pcEl.onclick = function () { copyInfoLine(pcUrl); };
+
+            infoModal.hidden = false;
+            try { localStorage.setItem('rd_info_seen', '1'); } catch (e) {}
         })
         .catch(function () {
-            window.prompt('Open this link on your phone:', location.origin + rdAuthUrl('/'));
+            window.prompt('Open on your phone:', location.origin + rdAuthUrl('/'));
         });
-    setTimeout(function () { setStatus(''); }, 6000);
+}
+
+function closeInfo() { infoModal.hidden = true; }
+
+const linkBtn = document.getElementById('btnLink');
+if (linkBtn) linkBtn.addEventListener('click', openInfo);
+
+const infoCloseBtn = document.getElementById('infoClose');
+if (infoCloseBtn) infoCloseBtn.addEventListener('click', closeInfo);
+infoModal.addEventListener('click', function (e) {
+    if (e.target === infoModal) closeInfo();
 });
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !infoModal.hidden) closeInfo();
+});
+
+// First launch (no terminal banner to read): show the info panel once.
+try {
+    if (!localStorage.getItem('rd_info_seen')) setTimeout(openInfo, 900);
+} catch (e) {}
 
 const quitBtn = document.getElementById('btnQuit');
 if (quitBtn && /Electron/i.test(navigator.userAgent)) {

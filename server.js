@@ -97,7 +97,16 @@ app.get('/api/lan-url', (req, res) => {
     if (req.query.token !== authToken) return res.status(401).json({ ok: false });
     const urls = lanAddresses().map((ip) => 'http://' + ip + ':' + config.PORT + '/?token=' + authToken);
     if (!urls.length) urls.push('http://localhost:' + config.PORT + '/?token=' + authToken);
-    res.json({ ok: true, urls: urls });
+    // Everything the terminal banner used to print - surfaced inside the app
+    // so a console-less EXE user still sees the access code and links.
+    res.json({
+        ok: true,
+        token: authToken,
+        port: config.PORT,
+        urls: urls,
+        pcUrl: 'http://localhost:' + config.PORT + '/?token=' + authToken,
+        chatUrl: 'http://localhost:' + config.PORT + '/chat'
+    });
 });
 
 // ---------- Static client UI ----------
