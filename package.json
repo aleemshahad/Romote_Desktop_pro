@@ -31,7 +31,7 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "https://github.com/aleemshahad/Romte_Desktop_pro.git"
+    "url": "https://github.com/aleemshahad/Romote_Desktop_pro.git"
   },
   "dependencies": {
     "express": "^5.2.1",

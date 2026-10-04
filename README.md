@@ -21,9 +21,9 @@ Romte Remote aapke Windows PC ko phone ka remote control banata hai: screen live
 
 ## ⬇️ Install kaise karein (Windows)
 
-1. **[Releases](https://github.com/aleemshahad/Romte_Desktop_pro/releases)** page se New Version EXE download karein:
-   - **[Installer version](https://github.com/aleemshahad/Romte_Desktop_pro/releases/download/v2.1.4/Remote-Desktop-pro-2.1.4-win-x64.exe)** — install karke Start Menu / Desktop shortcut ban jata hai, ya
-   - **[Remote-Desktop-pro-Portable.exe](https://github.com/aleemshahad/Romte_Desktop_pro/releases/download/v2.1.4/Remote-Desktop-pro-Portable.exe)** — bina install kiye seedha chalayein
+1. **[Releases](https://github.com/aleemshahad/Romote_Desktop_pro/releases)** page se New Version EXE download karein:
+   - **[Installer version](https://github.com/aleemshahad/Romote_Desktop_pro/releases/download/v2.1.4/Remote-Desktop-pro-2.1.4-win-x64.exe)** — install karke Start Menu / Desktop shortcut ban jata hai, ya
+   - **[Remote-Desktop-pro-Portable.exe](https://github.com/aleemshahad/Romote_Desktop_pro/releases/download/v2.1.4/Remote-Desktop-pro-Portable.exe)** — bina install kiye seedha chalayein
 2. EXE par double-click karein — **ek hi window khulti hai (chat window)**. Koi terminal/cmd nahi khulta.
 
 Bas — install complete.
