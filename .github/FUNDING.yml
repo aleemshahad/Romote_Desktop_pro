@@ -1,0 +1,4 @@
+# yeh supported funding platforms ki list hai
+custom: 
+  - "https://app.binance.com/uni-qr/request-to-pay?billOrderId=458234259539410944&billType=request_a_payment" # 10 USDT payment request ka Binance link
+  - "USDT (BSC / BEP20) Wallet Address: 0xc3f5c816b59562921f026aec15cac8e4deb29731" # Binance blockchain (BEP20) ka deposit address
