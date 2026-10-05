@@ -248,3 +248,13 @@ GitHub: [@aleemshahad](https://github.com/aleemshahad)
 <p align="center">
   Built with Node.js, Electron, Express, Socket.IO, and open-source technologies.
 </p>
+## ☕ Support & Donations
+
+If you find this project helpful and want to support my work, feel free to contribute via Binance or crypto! 
+
+### 🪙 Crypto Support (USDT / Binance)
+* **Binance Payment Link (10 USDT):** [Click here to pay via Binance Pay](https://app.binance.com/uni-qr/request-to-pay?billOrderId=458234259539410944&billType=request_a_payment)[span_0](start_span)[span_0](end_span)
+* **USDT (BSC / BEP20 Network) Deposit Address:** 
+  `0xc3f5c816b59562921f026aec15cac8e4deb29731`[span_1](start_span)[span_1](end_span)
+
+*Thank you so much for your support! ❤️*
