@@ -19,10 +19,14 @@
 
 * {
     box-sizing: border-box;
-    touch-action: none;
+    /* manipulation keeps double-tap zoom off everywhere but still allows
+       touch scrolling (plain "none" here made mobile chat unscrollable).
+       The remote-control screen keeps its own touch-action: none below. */
+    touch-action: manipulation;
     -webkit-touch-callout: none;
 }
 
+html { overscroll-behavior: none; }
 body {
     background:
         radial-gradient(1200px 500px at 80% -10%, rgba(99, 102, 241, 0.14), transparent 60%),
@@ -34,6 +38,7 @@ body {
     padding: 10px;
     user-select: none;
     -webkit-user-select: none;
+    overscroll-behavior: none;
 }
 
 /* ---------- App header ---------- */
@@ -302,6 +307,7 @@ button:active {
 .chat-messages {
     flex: 1;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 14px;
     background: var(--panel);
     border-radius: 16px;

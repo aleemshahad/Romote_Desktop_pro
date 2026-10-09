@@ -31,6 +31,9 @@
         let scrollAccumY = 0;
         let pinchMidX = 0;
         let pinchMidY = 0;
+        // Trackpad glide anchor: last one-finger position (client px).
+        let trackX = 0, trackY = 0;
+        let wasMultiTouch = false;
 
         // Shared "fit-to-canvas" letterbox math used by drawing AND by
         // inverse coordinate mapping, so both always agree.
@@ -184,6 +187,8 @@
         let touchCount = 0;
         let longPressTimer = null;
         let didLongPress = false;
+        // Left button held down = drag in progress (sheet's drag & drop).
+        let isHolding = false;
 
         container.addEventListener('touchstart', (e) => {
             // Guard: Allow toolbar button clicks to execute freely
@@ -196,20 +201,37 @@
             touchStartTime = Date.now();
             isDragging = false;
             didLongPress = false;
+            wasMultiTouch = touchCount >= 2;
+
+            // A second/third finger landing cancels an in-progress hold-drag.
+            if (touchCount >= 2 && isHolding) {
+                isHolding = false;
+                socket.emit('mouse_up', { button: 'left' });
+            }
 
             if (touchCount === 1) {
                 startTouchX = e.touches[0].clientX;
                 startTouchY = e.touches[0].clientY;
+                trackX = startTouchX;
+                trackY = startTouchY;
                 startPanX = panX;
                 startPanY = panY;
 
-                // Long-Press for Right Click (450ms)
+                // Hold gesture (450ms, finger still):
+                //  - trackpad: start a drag (button down) - the sheet's
+                //    double-tap-and-hold drag; right-click is the 2-finger tap
+                //  - touch/pan: right click at the touch point
                 clearTimeout(longPressTimer);
                 longPressTimer = setTimeout(() => {
                     if (!isDragging) {
                         didLongPress = true;
-                        const pc = clientToPcCoords(startTouchX, startTouchY);
-                        socket.emit('abs_mouse', { x: pc.x, y: pc.y, click: 'right' });
+                        if (currentMode === 'trackpad') {
+                            isHolding = true;
+                            socket.emit('mouse_down', { button: 'left' });
+                        } else {
+                            const pc = clientToPcCoords(startTouchX, startTouchY);
+                            socket.emit('abs_mouse', { x: pc.x, y: pc.y, click: 'right' });
+                        }
                     }
                 }, 450);
             } else if (touchCount === 2) {
@@ -228,6 +250,10 @@
                 // 2-finger tap = right click at the midpoint between the fingers
                 startTouchX = pinchMidX;
                 startTouchY = pinchMidY;
+            } else {
+                // 3+ fingers: only the tap action matters (middle click on
+                // release) - no hold/drag timer must survive.
+                clearTimeout(longPressTimer);
             }
         }, { passive: false });
 
@@ -247,8 +273,48 @@
                     clearTimeout(longPressTimer);
                 }
 
-                if (currentMode === 'trackpad' || currentMode === 'touch') {
-                    // Absolute positioning - cursor always follows the finger precisely
+                if (wasMultiTouch) {
+                    // First one-finger move after a pinch: just re-anchor so
+                    // no stale delta from the pinch is applied.
+                    wasMultiTouch = false;
+                    startTouchX = curX;
+                    startTouchY = curY;
+                    startPanX = panX;
+                    startPanY = panY;
+                } else if (currentMode === 'trackpad') {
+                    // Google Remote Desktop style trackpad: relative glide.
+                    // The cursor moves by the finger delta only - lifting the
+                    // finger leaves it in place and the next touch resumes
+                    // from there instead of jumping to the finger.
+                    const from = clientToPcCoords(trackX, trackY);
+                    const to = clientToPcCoords(curX, curY);
+                    const rdx = to.x - from.x;
+                    const rdy = to.y - from.y;
+                    if (rdx !== 0 || rdy !== 0) socket.emit('rel_mouse', { dx: rdx, dy: rdy });
+
+                    // Edge auto-pan while zoomed (GRD-style): the finger
+                    // pinned at the VIEW edge and pushing further slides the
+                    // viewport 1:1 with the finger, keeping the cursor at the
+                    // visible edge while hidden content is revealed.
+                    if (zoom > 1.0) {
+                        const dxC = curX - trackX;
+                        const dyC = curY - trackY;
+                        const cRect = canvas.getBoundingClientRect();
+                        let panned = false;
+                        if (dxC < 0 && curX <= cRect.left) { panX -= dxC; panned = true; }
+                        else if (dxC > 0 && curX >= cRect.right) { panX -= dxC; panned = true; }
+                        if (dyC < 0 && curY <= cRect.top) { panY -= dyC; panned = true; }
+                        else if (dyC > 0 && curY >= cRect.bottom) { panY -= dyC; panned = true; }
+                        if (panned) drawFrame(); // drawFrame clamps the pan
+                    }
+                } else if (currentMode === 'touch') {
+                    // Absolute positioning - cursor always follows the finger precisely.
+                    // Drag & drop (sheet): sliding while held presses the left
+                    // button down at the original touch point first.
+                    if (isDragging && !isHolding && !didLongPress && touchCount === 1) {
+                        isHolding = true;
+                        socket.emit('mouse_down', { button: 'left' });
+                    }
                     const pc = clientToPcCoords(curX, curY);
                     socket.emit('abs_mouse', { x: pc.x, y: pc.y, click: null });
                 } else if (currentMode === 'pan') {
@@ -260,6 +326,8 @@
                     panY = startPanY + dy;
                     drawFrame();
                 }
+                trackX = curX;
+                trackY = curY;
             } else if (e.touches.length === 2) {
                 clearTimeout(longPressTimer);
                 const currentDist = Math.hypot(
@@ -305,19 +373,47 @@
             e.stopPropagation();
             clearTimeout(longPressTimer);
 
-            if (e.touches.length === 0 && !didLongPress) {
+            // A held drag ends when the finger lifts.
+            const wasHolding = isHolding;
+            if (wasHolding) {
+                isHolding = false;
+                socket.emit('mouse_up', { button: 'left' });
+            }
+
+            if (e.touches.length === 0 && !didLongPress && !wasHolding) {
                 const duration = Date.now() - touchStartTime;
 
                 // 1-Finger Tap = Left Click
                 if (!isDragging && duration < 350 && touchCount === 1) {
-                    const pc = clientToPcCoords(startTouchX, startTouchY);
-                    socket.emit('abs_mouse', { x: pc.x, y: pc.y, click: 'left' });
+                    if (currentMode === 'trackpad') {
+                        socket.emit('click_current', { button: 'left' });
+                    } else {
+                        const pc = clientToPcCoords(startTouchX, startTouchY);
+                        socket.emit('abs_mouse', { x: pc.x, y: pc.y, click: 'left' });
+                    }
                 }
                 // 2-Finger Tap = Right Click
                 else if (!isDragging && duration < 350 && touchCount === 2) {
-                    const pc = clientToPcCoords(startTouchX, startTouchY);
-                    socket.emit('abs_mouse', { x: pc.x, y: pc.y, click: 'right' });
+                    if (currentMode === 'trackpad') {
+                        socket.emit('click_current', { button: 'right' });
+                    } else {
+                        const pc = clientToPcCoords(startTouchX, startTouchY);
+                        socket.emit('abs_mouse', { x: pc.x, y: pc.y, click: 'right' });
+                    }
                 }
+                // 3-Finger Tap = Middle Click (trackpad mode)
+                else if (!isDragging && duration < 350 && touchCount === 3 && currentMode === 'trackpad') {
+                    socket.emit('click_current', { button: 'middle' });
+                }
+            }
+
+            // One finger still down (multi-finger gesture ending): re-anchor
+            // the trackpad glide so the remaining finger starts a fresh delta.
+            // (startTouchX/Y stay untouched - the tap logic above still wants
+            // the original tap/pinch reference point.)
+            if (e.touches.length === 1) {
+                trackX = e.touches[0].clientX;
+                trackY = e.touches[0].clientY;
             }
         }, { passive: false });
 
