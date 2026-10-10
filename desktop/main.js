@@ -9,6 +9,24 @@ const path = require('path');
 const fs = require('fs');
 const net = require('net');
 
+// Some Windows machines (older Intel GPUs, or when the portable build runs from
+// a temporary directory) cannot start Chromium's GPU child process. It exits
+// with STATUS_DLL_NOT_FOUND (0xC0000135) and Chromium then aborts the whole app
+// with "GPU process isn't usable. Goodbye." - the window never opens.
+// If that happens, relaunch once with hardware acceleration disabled so the
+// app still runs with software rendering instead of dying.
+let gpuFallbackTried = false;
+app.on('child-process-gone', (event, details) => {
+    if (details && details.type === 'GPU' && !gpuFallbackTried) {
+        gpuFallbackTried = true;
+        app.relaunch({ args: process.argv.slice(1).concat(['--disable-gpu']) });
+        app.exit(0);
+    }
+});
+if (process.argv.includes('--disable-gpu')) {
+    app.disableHardwareAcceleration();
+}
+
 // Desktop app keeps user data in %APPDATA%\RomteRemote instead of the
 // dev-time E:\ default. Must be set before lib/config is loaded (it reads
 // the env var once, at require time).
