@@ -15,15 +15,18 @@ const net = require('net');
 // with "GPU process isn't usable. Goodbye." - the window never opens.
 // If that happens, relaunch once with hardware acceleration disabled so the
 // app still runs with software rendering instead of dying.
+// The fallback mode is detected via --disable-gpu in argv: at most ONE
+// relaunch ever happens, so a GPU crash in fallback mode cannot restart-loop.
+const inGpuFallback = process.argv.includes('--disable-gpu');
 let gpuFallbackTried = false;
 app.on('child-process-gone', (event, details) => {
-    if (details && details.type === 'GPU' && !gpuFallbackTried) {
+    if (details && details.type === 'GPU' && !inGpuFallback && !gpuFallbackTried) {
         gpuFallbackTried = true;
-        app.relaunch({ args: process.argv.slice(1).concat(['--disable-gpu']) });
+        app.relaunch({ args: process.argv.slice(1).concat(['--disable-gpu', '--disable-gpu-compositing']) });
         app.exit(0);
     }
 });
-if (process.argv.includes('--disable-gpu')) {
+if (inGpuFallback) {
     app.disableHardwareAcceleration();
 }
 
