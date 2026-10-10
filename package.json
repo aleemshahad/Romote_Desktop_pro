@@ -1,6 +1,6 @@
 {
   "name": "romte-remote",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "description": "Remote desktop control + real-time PC/mobile chat over your LAN - open source, with Windows EXE builds",
   "main": "desktop/main.js",
   "bin": {
